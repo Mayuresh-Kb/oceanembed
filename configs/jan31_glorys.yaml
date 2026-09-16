@@ -1,0 +1,20 @@
+# One missing daily GLORYS file required to make Jan 1–Jun 29 temporally
+# continuous. It is intentionally separate so no large source file is copied.
+period:
+  start: "2024-01-31"
+  end: "2024-01-31"
+
+glorys:
+  dataset_id: cmems_mod_glo_phy_my_0.083deg_P1D-m
+  variables: [thetao, so, uo, vo, zos]
+  depth_min_metres: 0.0
+  depth_max_metres: 1200.0
+  output_filename: glorys_nio_20240131_z1200m.nc
+
+era5_winds:
+  dataset_id: derived-era5-single-levels-daily-statistics
+  variables: [10m_u_component_of_wind, 10m_v_component_of_wind]
+  daily_statistic: daily_mean
+  frequency: 1_hourly
+  time_zone: utc+00:00
+  output_filename: unused_for_glorys_only.nc

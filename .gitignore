@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.DS_Store
+*.egg-info/
+.ipynb_checkpoints/
+
+# Large raw/processed ocean files stay local. Download them with the provided
+# acquisition scripts; never commit the 16 GB local data cache to GitHub.
+data/*
+checkpoints/
+!data/.gitkeep

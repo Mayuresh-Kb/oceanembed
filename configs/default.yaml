@@ -1,0 +1,165 @@
+# Scientific and I/O assumptions live here so they are easy to change.
+# Do not treat these as discovered facts about a NetCDF file.
+
+project:
+  name: OceanEmbed
+  description: >
+    Reconstruct North Indian Ocean subsurface temperature from surface
+    satellite-style observations, trained against GLORYS reanalysis.
+
+# Native CMEMS GLORYS12 grid is ~0.083°. The project target is 0.25°.
+region:
+  name: north_indian_ocean
+  lat_min: 5.0    # degrees north
+  lat_max: 30.0
+  lon_min: 45.0   # degrees east
+  lon_max: 105.0
+  lon_convention: degrees_east  # expected after loader wrap/subset
+  # Extra native-grid halo so 0.25° interpolation at the box edge has support.
+  subset_pad_deg: 0.2
+
+target_grid:
+  resolution_deg: 0.25
+  # Inclusive endpoints: H = 101, W = 241 at 0.25°
+  interpolation: linear  # prototype; not conservative remapping
+  mask_interpolation: nearest
+
+time:
+  target_resolution: daily
+  # Temporal window T is configurable; ConvLSTM will use this sequence length.
+  window: 5
+
+depth:
+  # Target profile depths (metres). The current sample file does NOT contain these.
+  target_metres: [0, 5, 10, 20, 30, 50, 75, 100, 125, 150, 200, 300, 500, 700, 1000]
+  # GLORYS's first native level is about 0.49 m, so 0 m uses that nearest
+  # level only when it is within this tolerance. Deeper levels use interpolation.
+  surface_nearest_tolerance_metres: 1.0
+
+dataset:
+  # Non-finite land/invalid values become this value only after their masks are
+  # returned alongside the tensors. It is not an ocean observation.
+  tensor_fill_value: 0.0
+
+model:
+  spatial_channels: [16, 32]
+  convlstm_hidden_channels: 32
+  depth_embedding_channels: 16
+  # Decoder learns a depth-specific residual over physical last-day SST.
+  residual_to_sst: true
+
+training:
+  label: "DEMO / DATA-LIMITED"
+  seed: 42
+  batch_size: 2
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  # Verified local DEMO setting: 50 epochs is still only 17 training windows.
+  smoke_test_epochs: 50
+  train_end_day_indices: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+  # End days 21–24 form a four-day gap; 25–29 are held-out validation ends.
+  validation_end_day_indices: [25, 26, 27, 28, 29]
+
+expanded_180d_training:
+  label: "EXPERIMENT / 180-DAY LIMITED DATA"
+  seed: 42
+  batch_size: 2
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  # 15 epochs gives 1,020 optimizer updates across 136 training windows.
+  smoke_test_epochs: 15
+  train_end_day_indices: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139]
+  # End indices 140–154 are a 15-day temporal gap.
+  validation_end_day_indices: [155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179]
+
+alerts:
+  # DEMO only: a 21-day GLORYS reference mean is not a climate normal.
+  reference_day_indices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+  moderate_abs_temperature_anomaly_c: 1.0
+  high_abs_temperature_anomaly_c: 2.0
+  minimum_affected_ocean_fraction: 0.10
+  # Dashboard-only operational review cues; not official warning thresholds.
+  minimum_anomaly_region_cells: 4
+  day_to_day_change_threshold_c: 0.5
+
+# A model may vertically interpolate a multi-level reference field onto
+# target_metres. These checks prevent starting from a surface-only extract.
+poc_readiness:
+  minimum_consecutive_days: 30
+  minimum_native_depth_levels: 10
+  required_depth_coverage_metres:
+    min_surface_depth: 1.0
+    max_target_depth: 1000.0
+  coordinate_candidates:
+    time: [time, valid_time, time_counter]
+    latitude: [latitude, lat, nav_lat]
+    longitude: [longitude, lon, nav_lon]
+    depth: [depth, deptht, depthu, lev, level]
+
+targets:
+  temperature:
+    candidates: [thetao, temperature, temp, to]
+    standard_names: [sea_water_potential_temperature, sea_water_temperature]
+
+# Canonical names used inside OceanEmbed. File-specific names are discovered
+# at load time from `candidates` and/or CF standard_name.
+surface_inputs:
+  sst:
+    required: true
+    candidates: [thetao, analysed_sst, sst, to]
+    standard_names:
+      - sea_water_potential_temperature
+      - sea_surface_temperature
+    role: sea_surface_temperature
+  sss:
+    required: true
+    candidates: [so, sos, sss]
+    standard_names:
+      - sea_water_salinity
+      - sea_surface_salinity
+    role: sea_surface_salinity
+  ssh:
+    required: true
+    candidates: [zos, sla, adt, ssh]
+    standard_names:
+      - sea_surface_height_above_geoid
+      - sea_surface_height_above_geoid
+      - sea_surface_height_above_sea_level
+    role: sea_surface_height  # this file's zos is SSH above geoid, not SLA
+  current_u:
+    required: true
+    candidates: [uo, usurf, uos]
+    standard_names: [eastward_sea_water_velocity]
+    role: surface_current_eastward
+  current_v:
+    required: true
+    candidates: [vo, vsurf, vos]
+    standard_names: [northward_sea_water_velocity]
+    role: surface_current_northward
+  wind_u:
+    required: false  # not present in the current GLORYS physics file
+    candidates: [eastward_wind, u10, uwnd]
+    standard_names: [eastward_wind]
+    role: surface_wind_eastward
+  wind_v:
+    required: false
+    candidates: [northward_wind, v10, vwnd]
+    standard_names: [northward_wind]
+    role: surface_wind_northward
+
+# Channel order for arrays of shape (T, C, H, W)
+channel_order: [sst, sss, ssh, current_u, current_v, wind_u, wind_v]
+
+# If a required variable is missing, the pipeline stops.
+# Optional variables are omitted from C rather than silently filled with zeros.
+missing_optional: omit
+
+normalization:
+  method: zscore
+  ocean_only: true  # land/NaN points excluded from mean/std
+  eps: 1.0e-6
+
+paths:
+  raw_data_dir: data
+  processed_dir: data/processed
+  stats_filename: normalization_stats.yaml

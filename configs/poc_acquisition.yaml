@@ -1,0 +1,32 @@
+# Verified against provider catalogues on 2026-09-15. Before execution,
+# use each provider's UI/API metadata to confirm availability and licences.
+# This historical period is configurable and deliberately fixed across sources.
+
+period:
+  start: "2024-01-01"
+  end: "2024-01-30"
+
+glorys:
+  # Dataset ID verified from the product currently represented by the local sample.
+  dataset_id: cmems_mod_glo_phy_my_0.083deg_P1D-m
+  variables: [thetao, so, uo, vo, zos]
+  depth_min_metres: 0.0
+  # Request beyond the deepest target so vertical interpolation at 1000 m
+  # is bracketed by native GLORYS levels rather than extrapolated from 902 m.
+  depth_max_metres: 1200.0
+  output_filename: glorys_nio_20240101_20240130_z1200m.nc
+
+era5_winds:
+  # CDS collection identifier for ERA5 daily single-level statistics.
+  dataset_id: derived-era5-single-levels-daily-statistics
+  variables: [10m_u_component_of_wind, 10m_v_component_of_wind]
+  daily_statistic: daily_mean
+  frequency: 1_hourly
+  time_zone: utc+00:00
+  output_filename: era5_winds_nio_20240101_20240130.nc
+
+# Do not substitute ARGO into the requests above. Supply delayed-mode,
+# QC-reviewed profiles separately when starting independent validation.
+argo:
+  required_for_validation: true
+  mode: delayed_mode_preferred

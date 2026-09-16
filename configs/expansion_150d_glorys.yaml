@@ -1,0 +1,21 @@
+# Additional data only. A separate Jan 31 file is also required because the
+# existing January source ends on Jan 30. This file does not overwrite PoC data.
+period:
+  start: "2024-02-01"
+  end: "2024-06-29"
+
+glorys:
+  dataset_id: cmems_mod_glo_phy_my_0.083deg_P1D-m
+  variables: [thetao, so, uo, vo, zos]
+  depth_min_metres: 0.0
+  depth_max_metres: 1200.0
+  output_filename: glorys_nio_20240201_20240629_z1200m.nc
+
+# Not run with this multi-month manifest; ERA5 requires one request per month.
+era5_winds:
+  dataset_id: derived-era5-single-levels-daily-statistics
+  variables: [10m_u_component_of_wind, 10m_v_component_of_wind]
+  daily_statistic: daily_mean
+  frequency: 1_hourly
+  time_zone: utc+00:00
+  output_filename: unused_for_glorys_only.nc
