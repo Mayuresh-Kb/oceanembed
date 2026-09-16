@@ -197,10 +197,9 @@ variable names and candidate fields rather than assuming them:
 .venv/bin/python scripts/inspect_argo_profiles.py data/argo_profile_file.nc
 ```
 
-## Local dashboard prototype
+## Dashboard and hosted demonstration
 
-The Streamlit dashboard reads the saved model prediction cube, independent
-ARGO-validation artifacts, and the real GLORYS/ERA5 source fields. It does not
+The Streamlit dashboard reads saved model prediction artifacts and does not
 retrain the model. It provides a date selector, the 15-depth selector, maps of
 prediction/SST/SSH/currents/winds, ARGO locations and profile comparison,
 metrics, short Ocean Insights explanations, and honest alert/security status.
@@ -224,6 +223,13 @@ GLORYS mean, with NORMAL/MODERATE/HIGH thresholds. This is **not** a long-term
 climatological anomaly or official disaster warning. Official disaster warnings
 are not connected. Authentication and role-based access are planned for
 deployment; they are not claimed as implemented in this local dashboard.
+
+For a lightweight public demonstration, `dashboard_assets/bay_of_bengal/`
+contains a 29 MB read-only package of the validated 150-day Bay of Bengal
+experiment: saved prediction maps, preprocessed dashboard fields, and ARGO
+validation artifacts. It contains no raw GLORYS, ERA5, or ARGO downloads. When
+the larger local NIO artifacts are absent (as in a hosted environment), the
+dashboard automatically exposes only this Bay of Bengal run.
 
 ## Scientific caveats (read these)
 

@@ -9,8 +9,9 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 
-from datasets.ocean_dataset import load_poc_bundle
+from datasets.ocean_dataset import OceanDataBundle, load_poc_bundle
 from preprocessing.config import load_config
+from preprocessing.regridding import build_target_grid
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,9 +32,10 @@ RUNS = {
         "region_title": "Bay of Bengal",
         "region_bounds": (10.0, 20.0, 80.0, 90.0),
         "context_bounds": (0.0, 25.0, 70.0, 100.0),
-        "predictions": ROOT / "data" / "processed" / "hackathon_patch_150d" / "validation_predictions.nc",
-        "metrics": ROOT / "data" / "processed" / "hackathon_patch_150d" / "argo_validation" / "argo_validation_metrics.json",
-        "collocations": ROOT / "data" / "processed" / "hackathon_patch_150d" / "argo_validation" / "argo_collocations.csv",
+        "predictions": ROOT / "dashboard_assets" / "bay_of_bengal" / "validation_predictions.nc",
+        "metrics": ROOT / "dashboard_assets" / "bay_of_bengal" / "argo_validation_metrics.json",
+        "collocations": ROOT / "dashboard_assets" / "bay_of_bengal" / "argo_collocations.csv",
+        "dashboard_cache": ROOT / "dashboard_assets" / "bay_of_bengal" / "dataset_cache",
         "glorys": ROOT / "data" / "glorys_nio_20240201_20240629_z1200m.nc",
         "winds": ROOT / "data" / "era5_winds_nio_20240201_20240629_merged.nc",
         "config": ROOT / "configs" / "hackathon_patch_150d.yaml",
@@ -69,8 +71,30 @@ def load_surface_fields(name: str = "Full NIO: 30-day demo") -> tuple[object, di
     not direct satellite observations in this PoC.
     """
     run = _run(name)
-    bundle = load_poc_bundle(
-        run["glorys"], run["winds"], load_config(run["config"]), cache_dir=run["cache_dir"]
-    )
+    config = load_config(run["config"])
+    dashboard_cache = run.get("dashboard_cache")
+    if dashboard_cache is not None and Path(dashboard_cache).exists():
+        bundle = _load_dashboard_bundle(Path(dashboard_cache), config)
+    else:
+        bundle = load_poc_bundle(
+            run["glorys"], run["winds"], config, cache_dir=run["cache_dir"]
+        )
     values = {name: bundle.surface[:, index] for index, name in enumerate(bundle.channel_names)}
     return bundle, values
+
+
+def _load_dashboard_bundle(cache_dir: Path, config: dict[str, object]) -> OceanDataBundle:
+    """Open the compact, read-only dashboard cache without raw NetCDF inputs."""
+    metadata = json.loads((cache_dir / "metadata.json").read_text(encoding="utf-8"))
+    latitude, longitude = build_target_grid(config)
+    return OceanDataBundle(
+        surface=np.load(cache_dir / "surface.npy", mmap_mode="r"),
+        temperature=np.load(cache_dir / "temperature.npy", mmap_mode="r"),
+        input_mask=np.load(cache_dir / "input_mask.npy", mmap_mode="r"),
+        target_mask=np.load(cache_dir / "target_mask.npy", mmap_mode="r"),
+        times=np.asarray(metadata["times"], dtype="datetime64[D]"),
+        channel_names=list(metadata["channels"]),
+        target_depths=np.asarray(metadata["depths_metres"], dtype=np.float32),
+        latitude=latitude,
+        longitude=longitude,
+    )

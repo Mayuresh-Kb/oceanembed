@@ -122,7 +122,8 @@ st.sidebar.markdown("""<div class='brand'><div class='wave'>≋≋</div><div cla
 navigation = st.sidebar.radio("Navigation", ["Ocean Analysis", "Validation", "Ocean Insights", "About"], label_visibility="collapsed")
 st.sidebar.divider()
 st.sidebar.markdown("#### Active analysis dataset")
-selected_run = st.sidebar.selectbox("Choose experiment run", ["Bay of Bengal: 150-day experiment", "Full NIO: 30-day demo"], help="This choice controls the maps, dates, validation evidence, and downloadable results shown throughout the dashboard.")
+available_runs = [name for name, run in RUNS.items() if Path(run["predictions"]).exists()]
+selected_run = st.sidebar.selectbox("Choose experiment run", available_runs, help="This choice controls the maps, dates, validation evidence, and downloadable results shown throughout the dashboard.")
 active_run = RUNS[selected_run]
 lat_min, lat_max, lon_min, lon_max = active_run["region_bounds"]
 st.sidebar.markdown(f"**{active_run['region_title']}**  ")

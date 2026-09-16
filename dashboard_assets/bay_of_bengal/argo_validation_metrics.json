@@ -1,0 +1,11 @@
+{
+  "valid_temperature_depth_pairs": 514,
+  "rmse_c": 1.317199442603933,
+  "mae_c": 0.892391787359965,
+  "bias_c": 0.49566567574083525,
+  "label": "EXPERIMENT / 150-DAY REGIONAL PATCH / DATA-LIMITED",
+  "source": "Independent ARGO in-situ profile observations; not perfect ground truth.",
+  "qc_policy": "TEMP/PRES adjusted QC flag 1 only; only D/A profiles are included. R profiles are excluded from primary metrics.",
+  "vertical_coordinate_note": "Prototype uses pressure in dbar as approximate depth in metres; no extrapolation.",
+  "collocations_csv": "data/processed/hackathon_patch_150d/argo_validation/argo_collocations.csv"
+}
