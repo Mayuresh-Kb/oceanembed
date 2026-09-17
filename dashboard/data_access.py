@@ -30,6 +30,7 @@ RUNS = {
     },
     "Bay of Bengal: 150-day experiment": {
         "region_title": "Bay of Bengal",
+        "dataset_name": "CMEMS GLORYS12V1 Global Ocean Physics Reanalysis",
         "region_bounds": (10.0, 20.0, 80.0, 90.0),
         "context_bounds": (0.0, 25.0, 70.0, 100.0),
         "predictions": ROOT / "dashboard_assets" / "bay_of_bengal" / "validation_predictions.nc",
@@ -50,21 +51,21 @@ def _run(name: str) -> dict[str, object]:
     return RUNS[name]
 
 
-def load_prediction_cube(name: str = "Full NIO: 30-day demo") -> xr.Dataset:
+def load_prediction_cube(name: str = "Bay of Bengal: 150-day experiment") -> xr.Dataset:
     """Load saved model output; callers should not use this for training."""
     return xr.open_dataset(_run(name)["predictions"])
 
 
-def load_metrics(name: str = "Full NIO: 30-day demo") -> dict[str, object]:
+def load_metrics(name: str = "Bay of Bengal: 150-day experiment") -> dict[str, object]:
     return json.loads(_run(name)["metrics"].read_text(encoding="utf-8"))
 
 
-def load_collocations(name: str = "Full NIO: 30-day demo") -> list[dict[str, str]]:
+def load_collocations(name: str = "Bay of Bengal: 150-day experiment") -> list[dict[str, str]]:
     with _run(name)["collocations"].open(encoding="utf-8") as handle:
         return list(csv.DictReader(handle))
 
 
-def load_surface_fields(name: str = "Full NIO: 30-day demo") -> tuple[object, dict[str, np.ndarray]]:
+def load_surface_fields(name: str = "Bay of Bengal: 150-day experiment") -> tuple[object, dict[str, np.ndarray]]:
     """Return raw physical-unit fields for the five prediction dates.
 
     `bundle.surface` is `(N, 7, H, W)` and represents reanalysis/ERA5 inputs,
